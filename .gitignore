@@ -1,0 +1,5 @@
+# Arquivo de segredos - NUNCA ENVIAR
+.env
+
+# Pasta do ambiente virtual do Python
+.venv/
