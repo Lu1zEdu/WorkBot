@@ -1,4 +1,3 @@
-# job_search.py
 import requests
 
 API_URL = "https://remotive.com/api/remote-jobs"
