@@ -23,11 +23,8 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         python -m pip install flake8
-        # Verifica se o arquivo requirements.txt existe antes de instalar
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
     - name: Rodar análise com flake8
       run: |
-        # Este comando verifica o código por erros e avisa sobre complexidade e tamanho das linhas
-        # --exit-zero faz com que a verificação não falhe por erros de estilo, apenas avise.
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics

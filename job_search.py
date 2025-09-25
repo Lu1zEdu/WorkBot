@@ -16,8 +16,9 @@ def search_jobs(keyword: str, limit: int = 5):
         print(f"Encontradas {len(jobs)} vagas para '{keyword}'.")
         return jobs
     except requests.exceptions.RequestException as e:
-        print(f"Erro ao buscar vagas: {e}")
+        print(f"Erro ao buscar vagas na API: {e}")
         return []
     except Exception as e:
         print(f"Ocorreu um erro inesperado: {e}")
         return []
+
