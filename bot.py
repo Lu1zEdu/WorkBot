@@ -106,6 +106,7 @@ if __name__ == "__main__":
             except Exception as e:
                 print(f"Falha ao carregar o Cog '{filename}': {e}")
 
+    DISCORD_TOKEN = os.getenv('DISCORD_TOKEN')
     if DISCORD_TOKEN:
         bot.run(DISCORD_TOKEN)
     else:
