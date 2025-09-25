@@ -39,14 +39,11 @@ async def on_ready():
 @tasks.loop(hours=2)
 async def check_new_jobs():
     print("Executando verificação agendada de vagas...")
-    keyword_to_search = "Software Engineer"
-    jobs = search_all_sources(keyword_to_search)
-    
+    jobs = search_all_sources("Software Engineer")
     channel = bot.get_channel(TARGET_CHANNEL_ID)
     if not channel:
         print(f"ERRO: Canal com ID {TARGET_CHANNEL_ID} não encontrado.")
         return
-        
     new_jobs_found = 0
     for job in reversed(jobs):
         job_id = job.get('id')
@@ -67,34 +64,30 @@ async def before_check_new_jobs():
     await bot.wait_until_ready()
 
 def create_job_embed(job: dict):
-    """Cria uma mensagem bonita (Embed) para uma vaga de emprego."""
     title = job.get('title', 'N/A')
     company = job.get('company_name', 'N/A')
     url = job.get('url', '#')
-    job_type = job.get('job_type', 'N/A').replace('_', ' ').title()
+    location = job.get('location', 'N/A')
+    salary = job.get('salary', '')
     source = job.get('source', 'Desconhecida')
     tags = job.get('tags', [])
-    
     try:
         pub_date_str = job.get('publication_date', '')
-        pub_date = datetime.fromisoformat(pub_date_str.replace('Z', '+00:00'))
-        date_formatted = pub_date.strftime('%d/%m/%Y')
+        date_formatted = datetime.fromisoformat(pub_date_str.replace('Z', '')).strftime('%d/%m/%Y') if pub_date_str else "N/A"
     except:
         date_formatted = "N/A"
-
     embed = nextcord.Embed(
         title=f"💼 {title}",
         url=url,
-        description=f"**Empresa:** {company}\n**Tipo:** {job_type}",
+        description=f"**Empresa:** {company}\n**📍 Localização:** {location}",
         color=nextcord.Color.dark_green()
     )
+    if salary:
+        embed.add_field(name="💰 Salário", value=f"`{salary}`", inline=True)
     embed.add_field(name="📅 Publicação", value=date_formatted, inline=True)
-    embed.add_field(name="🌐 Fonte", value=source, inline=True)
-    
     if tags:
-        tags_str = ", ".join(f"`{tag}`" for tag in tags[:5])
-        embed.add_field(name="⚙️ Tecnologias e Tags", value=tags_str, inline=False)
-
+        embed.add_field(name="⚙️ Tecnologias", value=", ".join(f"`{t}`" for t in tags[:7]), inline=False)
+    embed.set_footer(text=f"Fonte: {source}")
     return embed
 
 if __name__ == "__main__":
@@ -102,12 +95,10 @@ if __name__ == "__main__":
         if filename.endswith('.py'):
             try:
                 bot.load_extension(f'cogs.{filename[:-3]}')
-                print(f"Cog '{filename}' carregado com sucesso.")
+                print(f"Cog '{filename}' carregado.")
             except Exception as e:
-                print(f"Falha ao carregar o Cog '{filename}': {e}")
-
-    DISCORD_TOKEN = os.getenv('DISCORD_TOKEN')
+                print(f"Falha ao carregar Cog '{filename}': {e}")
     if DISCORD_TOKEN:
         bot.run(DISCORD_TOKEN)
     else:
-        print("ERRO CRÍTICO: O token do Discord não foi encontrado. Verifique o seu ficheiro .env")
+        print("ERRO CRÍTICO: Token do Discord não encontrado.")
