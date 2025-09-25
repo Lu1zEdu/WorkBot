@@ -4,7 +4,7 @@ import nextcord
 from nextcord.ext import commands, tasks
 from dotenv import load_dotenv
 from datetime import datetime
-from job_search import search_jobs
+from job_search import search_all_sources
 
 load_dotenv()
 DISCORD_TOKEN = os.getenv('DISCORD_TOKEN')
@@ -27,9 +27,10 @@ def save_posted_id(job_id):
         json.dump({"posted_ids": list(posted_job_ids)}, f, indent=4)
 
 posted_job_ids = load_posted_ids()
+
 intents = nextcord.Intents.default()
 intents.message_content = True
-bot = commands.Bot(command_prefix='!', intents=intents)
+bot = commands.Bot(intents=intents)
 
 @bot.event
 async def on_ready():
@@ -39,28 +40,34 @@ async def on_ready():
     print('------')
     check_new_jobs.start()
 
-@tasks.loop(minutes=60)
+@tasks.loop(hours=2)
 async def check_new_jobs():
     """Tarefa agendada que busca novas vagas e as posta no canal definido."""
     print("Executando verificação agendada de vagas...")
-    keyword_to_search = "software engineer"
-    jobs = search_jobs(keyword_to_search, limit=10)
+    keyword_to_search = "Desenvolvedor Python"
+    jobs = search_all_sources(keyword_to_search)
     
     channel = bot.get_channel(TARGET_CHANNEL_ID)
     if not channel:
         print(f"ERRO: Canal com ID {TARGET_CHANNEL_ID} não encontrado.")
         return
         
+    new_jobs_found = 0
     for job in reversed(jobs):
         job_id = job.get('id')
         if job_id not in posted_job_ids:
+            new_jobs_found += 1
             try:
                 embed = create_job_embed(job)
                 await channel.send(embed=embed)
-                save_posted_id(job_id) # Salva o ID no arquivo
+                save_posted_id(job_id)
                 print(f"Nova vaga postada: {job.get('title')}")
             except Exception as e:
                 print(f"Erro ao postar vaga {job_id}: {e}")
+    
+    if new_jobs_found == 0:
+        print("Nenhuma nova vaga encontrada na verificação agendada.")
+
 
 @check_new_jobs.before_loop
 async def before_check_new_jobs():
@@ -72,6 +79,7 @@ def create_job_embed(job: dict):
     company = job.get('company_name', 'N/A')
     url = job.get('url', '#')
     job_type = job.get('job_type', 'N/A').replace('_', ' ').title()
+    source = job.get('source', 'Desconhecida')
     
     try:
         pub_date_str = job.get('publication_date', '')
@@ -86,14 +94,18 @@ def create_job_embed(job: dict):
         description=f"**Empresa:** {company}\n**Tipo:** {job_type}",
         color=nextcord.Color.dark_green()
     )
-    embed.add_field(name="📅 Data de Publicação", value=date_formatted, inline=True)
-    embed.set_footer(text=f"WorkBot - ID da Vaga: {job.get('id')}")
+    embed.add_field(name="📅 Publicação", value=date_formatted, inline=True)
+    embed.set_footer(text=f"Fonte: {source}")
     return embed
 
 if __name__ == "__main__":
     for filename in os.listdir('./cogs'):
         if filename.endswith('.py'):
-            bot.load_extension(f'cogs.{filename[:-3]}')
+            try:
+                bot.load_extension(f'cogs.{filename[:-3]}')
+                print(f"Cog '{filename}' carregado com sucesso.")
+            except Exception as e:
+                print(f"Falha ao carregar o Cog '{filename}': {e}")
 
     if DISCORD_TOKEN:
         bot.run(DISCORD_TOKEN)
