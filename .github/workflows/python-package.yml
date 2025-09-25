@@ -1,0 +1,33 @@
+name: Análise de Código Python
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Baixar o código do repositório
+      uses: actions/checkout@v4
+
+    - name: Configurar Python 3.11
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.11"
+
+    - name: Instalar dependências
+      run: |
+        python -m pip install --upgrade pip
+        python -m pip install flake8
+        # Verifica se o arquivo requirements.txt existe antes de instalar
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+    - name: Rodar análise com flake8
+      run: |
+        # Este comando verifica o código por erros e avisa sobre complexidade e tamanho das linhas
+        # --exit-zero faz com que a verificação não falhe por erros de estilo, apenas avise.
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
