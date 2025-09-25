@@ -1,3 +1,4 @@
+# cogs/comandos_vagas.py
 import nextcord
 from nextcord.ext import commands
 from job_search import search_all_sources
