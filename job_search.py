@@ -5,7 +5,7 @@ def search_remotive_jobs(keyword: str):
     """Busca vagas na API do Remotive."""
     print(f"Buscando no Remotive por: {keyword}")
     API_URL = "https://remotive.com/api/remote-jobs"
-    params = {'search': keyword, 'limit': 50}
+    params = {'search': keyword, 'limit': 100}
     
     try:
         response = requests.get(API_URL, params=params)
@@ -22,6 +22,7 @@ def search_remotive_jobs(keyword: str):
                 'url': job.get('url'),
                 'publication_date': job.get('publication_date'),
                 'job_type': job.get('job_type'),
+                'tags': job.get('tags', []),
                 'source': 'Remotive'
             })
         return formatted_jobs
@@ -32,21 +33,15 @@ def search_remotive_jobs(keyword: str):
 def search_linkedin_jobs(keyword: str):
     """Placeholder para a busca de vagas no LinkedIn via scraping."""
     print(f"Buscando no LinkedIn por: {keyword} (implementação pendente)")
-
     return []
 
-
 def search_all_sources(keyword: str):
-    """
-    Executa todas as funções de busca em paralelo e agrega os resultados.
-    """
+    """Executa todas as funções de busca em paralelo e agrega os resultados."""
     all_jobs = []
-    
     search_functions = [search_remotive_jobs, search_linkedin_jobs]
     
     with ThreadPoolExecutor() as executor:
         results = executor.map(lambda f: f(keyword), search_functions)
-        
         for job_list in results:
             all_jobs.extend(job_list)
             

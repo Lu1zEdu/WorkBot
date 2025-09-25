@@ -12,7 +12,6 @@ TARGET_CHANNEL_ID = int(os.getenv('DISCORD_CHANNEL_ID'))
 DB_FILE = "posted_jobs.json"
 
 def load_posted_ids():
-    """Carrega os IDs de vagas já postadas do arquivo JSON."""
     try:
         with open(DB_FILE, "r") as f:
             data = json.load(f)
@@ -21,7 +20,6 @@ def load_posted_ids():
         return set()
 
 def save_posted_id(job_id):
-    """Adiciona um novo ID de vaga ao arquivo JSON."""
     posted_job_ids.add(job_id)
     with open(DB_FILE, "w") as f:
         json.dump({"posted_ids": list(posted_job_ids)}, f, indent=4)
@@ -29,12 +27,10 @@ def save_posted_id(job_id):
 posted_job_ids = load_posted_ids()
 
 intents = nextcord.Intents.default()
-intents.message_content = True
 bot = commands.Bot(intents=intents)
 
 @bot.event
 async def on_ready():
-    """Evento acionado quando o WorkBot se conecta com sucesso ao Discord."""
     print(f'WorkBot conectado como: {bot.user.name}')
     print(f'ID do Bot: {bot.user.id}')
     print('------')
@@ -42,9 +38,8 @@ async def on_ready():
 
 @tasks.loop(hours=2)
 async def check_new_jobs():
-    """Tarefa agendada que busca novas vagas e as posta no canal definido."""
     print("Executando verificação agendada de vagas...")
-    keyword_to_search = "Desenvolvedor Python"
+    keyword_to_search = "Software Engineer"
     jobs = search_all_sources(keyword_to_search)
     
     channel = bot.get_channel(TARGET_CHANNEL_ID)
@@ -61,13 +56,11 @@ async def check_new_jobs():
                 embed = create_job_embed(job)
                 await channel.send(embed=embed)
                 save_posted_id(job_id)
-                print(f"Nova vaga postada: {job.get('title')}")
+                print(f"Nova vaga publicada: {job.get('title')}")
             except Exception as e:
-                print(f"Erro ao postar vaga {job_id}: {e}")
-    
+                print(f"Erro ao publicar vaga {job_id}: {e}")
     if new_jobs_found == 0:
         print("Nenhuma nova vaga encontrada na verificação agendada.")
-
 
 @check_new_jobs.before_loop
 async def before_check_new_jobs():
@@ -80,6 +73,7 @@ def create_job_embed(job: dict):
     url = job.get('url', '#')
     job_type = job.get('job_type', 'N/A').replace('_', ' ').title()
     source = job.get('source', 'Desconhecida')
+    tags = job.get('tags', [])
     
     try:
         pub_date_str = job.get('publication_date', '')
@@ -95,7 +89,12 @@ def create_job_embed(job: dict):
         color=nextcord.Color.dark_green()
     )
     embed.add_field(name="📅 Publicação", value=date_formatted, inline=True)
-    embed.set_footer(text=f"Fonte: {source}")
+    embed.add_field(name="🌐 Fonte", value=source, inline=True)
+    
+    if tags:
+        tags_str = ", ".join(f"`{tag}`" for tag in tags[:5])
+        embed.add_field(name="⚙️ Tecnologias e Tags", value=tags_str, inline=False)
+
     return embed
 
 if __name__ == "__main__":
@@ -110,4 +109,4 @@ if __name__ == "__main__":
     if DISCORD_TOKEN:
         bot.run(DISCORD_TOKEN)
     else:
-        print("ERRO CRÍTICO: O token do Discord não foi encontrado. Verifique seu arquivo .env")
+        print("ERRO CRÍTICO: O token do Discord não foi encontrado. Verifique o seu ficheiro .env")

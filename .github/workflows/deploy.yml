@@ -1,0 +1,35 @@
+name: Deploy do Bot na Azure VM (via Docker Compose)
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Conectar na VM e fazer o deploy
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.AZURE_VM_HOST }}
+        username: ${{ secrets.AZURE_VM_USERNAME }}
+        key: ${{ secrets.AZURE_VM_SSH_KEY }}
+        script: |
+          # Navega até à pasta do projeto na VM
+          # Se não existir, clona o repositório (apenas na primeira vez)
+          if [ ! -d "WorkBot" ]; then
+            git clone https://github.com/Lu1zEdu/WorkBot.git
+          fi
+          cd ~/WorkBot
+
+          # Puxa as últimas alterações do Dockerfile, docker-compose.yml, etc.
+          git pull origin main
+
+          # Usa o Docker Compose para reconstruir a imagem e reiniciar o contêiner.
+          # O Docker Compose irá ler o docker-compose.yml e fazer tudo.
+          # O script entrypoint.sh dentro do contêiner irá então fazer o git pull do código da aplicação.
+          docker-compose up -d --build
+
+          # Limpa imagens Docker antigas
+          docker image prune -f
